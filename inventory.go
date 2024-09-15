@@ -5,9 +5,26 @@ import (
 	"sync"
 )
 
+// Inventory is a collection of items.
+// It is used to store items that can be equipped.
+// This interface is used internally by the [Hoard], [EquipDefault], and [EquipWithOption] functions.
+// To create a custom inventory, use the [UseInventory] function.
 type Inventory interface {
-	Put(itemImpl Item) Inventory
-	PutIfAbsent(itemImpl Item) Inventory
+
+	// Put adds an [Item] to the inventory.
+	// To get an [Item], refer to the [UseInventory] function.
+	//
+	// Example:
+	// 	Hoard(nil, UseInventory("test").Put(RememberAs("test", "test")))
+	Put(item Item) Inventory
+
+	// PutIfAbsent adds an [Item] to the inventory if it does not exist yet.
+	// The comparison is done by also comparing the alias of the item, hence if the alias is different, it will be considered a different item.
+	// To get an [Item], refer to the [UseInventory] function.
+	//
+	// Example:
+	// 	Hoard(nil, UseInventory("test").PutIfAbsent(RememberAs("test", "test")))
+	PutIfAbsent(item Item) Inventory
 
 	getName() string
 
@@ -15,6 +32,7 @@ type Inventory interface {
 	// Should only be used internally.
 	// Prefer using [EquipDefault] or [EquipWithOption] instead.
 	equip(name string) Item
+
 	merge(inventoryImpl Inventory) Inventory
 
 	loadout() func(func(string, Item) bool)
@@ -36,6 +54,52 @@ type inventoryImpl struct {
 	mu         sync.RWMutex
 }
 
+// Put adds an [Item] to the inventory.
+// To get an [Item], refer to the [UseInventory] function.
+//
+// Example:
+//
+//	Hoard(nil, UseInventory("test").Put(RememberAs("test", "test")))
+func (b *inventoryImpl) Put(item Item) Inventory {
+	if item == nil {
+		return b
+	}
+
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	b.itemMap[item.getName()] = item
+	b.sortedKeys = slices.DeleteFunc(b.sortedKeys, func(e string) bool {
+		return e == item.getName()
+	})
+	b.sortedKeys = append(b.sortedKeys, item.getName())
+
+	return b
+}
+
+// PutIfAbsent adds an [Item] to the inventory if it does not exist yet.
+// The comparison is done by also comparing the alias of the item, hence if the alias is different, it will be considered adifferent item.
+// To get an [Item], refer to the [UseInventory] function.
+//
+// Example:
+//
+//	Hoard(nil, UseInventory("test").PutIfAbsent(RememberAs("test", "test")))
+func (b *inventoryImpl) PutIfAbsent(item Item) Inventory {
+	if item == nil {
+		return b
+	}
+
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	if _, ok := b.itemMap[item.getName()]; !ok {
+		b.itemMap[item.getName()] = item
+		b.sortedKeys = append(b.sortedKeys, item.getName())
+	}
+
+	return b
+}
+
 func (b *inventoryImpl) getName() string {
 	return b.name
 }
@@ -53,48 +117,15 @@ func (b *inventoryImpl) equip(name string) Item {
 	return v
 }
 
-func (b *inventoryImpl) Put(itemImpl Item) Inventory {
-	if itemImpl == nil {
+func (b *inventoryImpl) merge(invent Inventory) Inventory {
+	if invent == nil {
 		return b
 	}
 
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	b.itemMap[itemImpl.getName()] = itemImpl
-	b.sortedKeys = slices.DeleteFunc(b.sortedKeys, func(e string) bool {
-		return e == itemImpl.getName()
-	})
-	b.sortedKeys = append(b.sortedKeys, itemImpl.getName())
-
-	return b
-}
-
-func (b *inventoryImpl) PutIfAbsent(itemImpl Item) Inventory {
-	if itemImpl == nil {
-		return b
-	}
-
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	if _, ok := b.itemMap[itemImpl.getName()]; !ok {
-		b.itemMap[itemImpl.getName()] = itemImpl
-		b.sortedKeys = append(b.sortedKeys, itemImpl.getName())
-	}
-
-	return b
-}
-
-func (b *inventoryImpl) merge(inventoryImpl Inventory) Inventory {
-	if inventoryImpl == nil {
-		return b
-	}
-
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	for k, v := range inventoryImpl.loadout() {
+	for k, v := range invent.loadout() {
 		b.itemMap[k] = v
 
 		// re-insert the key to ensure the order is consistent

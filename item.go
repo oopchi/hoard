@@ -1,5 +1,8 @@
 package hoard
 
+// Item is an interface that represents an item that can be equipped.
+// It is used internally by the [Hoard], [EquipDefault], and [EquipWithOption] functions.
+// To create a custom item, use the [RememberAs] function.
 type Item interface {
 	getName() string
 	use() interface{}
