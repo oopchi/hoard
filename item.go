@@ -1,11 +1,11 @@
 package hoard
 
-type item interface {
+type Item interface {
 	getName() string
 	use() interface{}
 }
 
-func newItem(thing interface{}, name string) item {
+func newItem(thing interface{}, name string) Item {
 	return &itemImpl{
 		thing: thing,
 		name:  name,

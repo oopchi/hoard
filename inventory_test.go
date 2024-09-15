@@ -13,7 +13,7 @@ func (s *suiteTest) TestGetName() {
 func (s *suiteTest) TestEquip() {
 	tests := []struct {
 		name      string
-		putItem   item
+		putItem   Item
 		equipName string
 		wantThing interface{}
 		wantName  string
@@ -54,19 +54,19 @@ func (s *suiteTest) TestEquip() {
 
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
-			s.invent.put(tt.putItem)
+			s.invent.Put(tt.putItem)
 
-			item := s.invent.equip(tt.equipName)
+			Item := s.invent.equip(tt.equipName)
 
 			if tt.wantThing == nil {
-				require.Nil(s.T(), item)
+				require.Nil(s.T(), Item)
 				return
 			}
 
-			require.Equal(s.T(), tt.wantThing, item.use())
+			require.Equal(s.T(), tt.wantThing, Item.use())
 
-			require.NotNil(s.T(), item)
-			require.Equal(s.T(), tt.wantName, item.getName())
+			require.NotNil(s.T(), Item)
+			require.Equal(s.T(), tt.wantName, Item.getName())
 		})
 	}
 }
@@ -74,7 +74,7 @@ func (s *suiteTest) TestEquip() {
 func (s *suiteTest) TestPut() {
 	tests := []struct {
 		name      string
-		putItem   item
+		putItem   Item
 		equipName string
 		wantThing interface{}
 		wantName  string
@@ -115,19 +115,19 @@ func (s *suiteTest) TestPut() {
 
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
-			s.invent.put(tt.putItem)
+			s.invent.Put(tt.putItem)
 
-			item := s.invent.equip(tt.equipName)
+			Item := s.invent.equip(tt.equipName)
 
 			if tt.wantThing == nil {
-				require.Nil(s.T(), item)
+				require.Nil(s.T(), Item)
 				return
 			}
 
-			require.Equal(s.T(), tt.wantThing, item.use())
+			require.Equal(s.T(), tt.wantThing, Item.use())
 
-			require.NotNil(s.T(), item)
-			require.Equal(s.T(), tt.wantName, item.getName())
+			require.NotNil(s.T(), Item)
+			require.Equal(s.T(), tt.wantName, Item.getName())
 
 		})
 	}
@@ -136,7 +136,7 @@ func (s *suiteTest) TestPut() {
 func (s *suiteTest) TestPutIfAbsent() {
 	tests := []struct {
 		name      string
-		putItem   item
+		putItem   Item
 		equipName string
 		wantThing interface{}
 		wantName  string
@@ -191,20 +191,20 @@ func (s *suiteTest) TestPutIfAbsent() {
 
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
-			s.invent.put(newItem("test thing23", "test23"))
-			s.invent.putIfAbsent(tt.putItem)
+			s.invent.Put(newItem("test thing23", "test23"))
+			s.invent.PutIfAbsent(tt.putItem)
 
-			item := s.invent.equip(tt.equipName)
+			Item := s.invent.equip(tt.equipName)
 
 			if tt.wantThing == nil {
-				require.Nil(s.T(), item)
+				require.Nil(s.T(), Item)
 				return
 			}
 
-			require.Equal(s.T(), tt.wantThing, item.use())
+			require.Equal(s.T(), tt.wantThing, Item.use())
 
-			require.NotNil(s.T(), item)
-			require.Equal(s.T(), tt.wantName, item.getName())
+			require.NotNil(s.T(), Item)
+			require.Equal(s.T(), tt.wantName, Item.getName())
 
 		})
 	}
@@ -213,16 +213,16 @@ func (s *suiteTest) TestPutIfAbsent() {
 func (s *suiteTest) TestMerge() {
 	tests := []struct {
 		name      string
-		inventory inventory
+		inventory Inventory
 		equipName string
 		wantThing interface{}
 		wantName  string
 	}{
 		{
 			name: "merge with the same name inventory should succeed",
-			inventory: func() inventory {
+			inventory: func() Inventory {
 				i := newInventory("test")
-				i.put(newItem("test thing", "test"))
+				i.Put(newItem("test thing", "test"))
 
 				return i
 			}(),
@@ -232,9 +232,9 @@ func (s *suiteTest) TestMerge() {
 		},
 		{
 			name: "merge with different name inventory should also merge the inventory",
-			inventory: func() inventory {
+			inventory: func() Inventory {
 				i := newInventory("test234")
-				i.put(newItem("test thing", "test"))
+				i.Put(newItem("test thing", "test"))
 
 				return i
 			}(),
@@ -253,20 +253,20 @@ func (s *suiteTest) TestMerge() {
 
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
-			s.invent.put(newItem("test thing23", "test23"))
+			s.invent.Put(newItem("test thing23", "test23"))
 			s.invent.merge(tt.inventory)
 
-			item := s.invent.equip(tt.equipName)
+			Item := s.invent.equip(tt.equipName)
 
 			if tt.wantThing == nil {
-				require.Nil(s.T(), item)
+				require.Nil(s.T(), Item)
 				return
 			}
 
-			require.Equal(s.T(), tt.wantThing, item.use())
+			require.Equal(s.T(), tt.wantThing, Item.use())
 
-			require.NotNil(s.T(), item)
-			require.Equal(s.T(), tt.wantName, item.getName())
+			require.NotNil(s.T(), Item)
+			require.Equal(s.T(), tt.wantName, Item.getName())
 		})
 	}
 }
@@ -274,19 +274,19 @@ func (s *suiteTest) TestMerge() {
 func (s *suiteTest) TestLoadout() {
 	tests := []struct {
 		name          string
-		itemsToPut    []item
+		itemsToPut    []Item
 		indexToBreak  int
-		itemsToReturn []item
+		itemsToReturn []Item
 	}{
 		{
 			name: "should return all items in the inventory",
-			itemsToPut: []item{
+			itemsToPut: []Item{
 				newItem("test thing", "test"),
 				newItem("test thing2", "test2"),
 				newItem("test thing3", "test3"),
 			},
 			indexToBreak: -1,
-			itemsToReturn: []item{
+			itemsToReturn: []Item{
 				newItem("test thing", "test"),
 				newItem("test thing2", "test2"),
 				newItem("test thing3", "test3"),
@@ -294,29 +294,29 @@ func (s *suiteTest) TestLoadout() {
 		},
 		{
 			name: "should return all items in the inventory until the index to break",
-			itemsToPut: []item{
+			itemsToPut: []Item{
 				newItem("test thing", "test"),
 				newItem("test thing2", "test2"),
 				newItem("test thing3", "test3"),
 			},
 			indexToBreak: 1,
-			itemsToReturn: []item{
+			itemsToReturn: []Item{
 				newItem("test thing", "test"),
 				newItem("test thing2", "test2"),
 			},
 		},
 		{
 			name:          "should return empty items if the inventory is empty",
-			itemsToPut:    []item{},
+			itemsToPut:    []Item{},
 			indexToBreak:  -1,
-			itemsToReturn: []item{},
+			itemsToReturn: []Item{},
 		},
 	}
 
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
-			for _, item := range tt.itemsToPut {
-				s.invent.put(item)
+			for _, Item := range tt.itemsToPut {
+				s.invent.Put(Item)
 			}
 
 			durationChan := make(chan time.Duration)
@@ -336,14 +336,14 @@ func (s *suiteTest) TestLoadout() {
 					return
 				}
 				timeNow := <-startChan
-				s.invent.put(newItem("test thing4", "test4"))
+				s.invent.Put(newItem("test thing4", "test4"))
 
 				duration := time.Since(timeNow)
 				durationChan <- duration
 			}()
 
 			var i int
-			returnedItems := make([]item, 0)
+			returnedItems := make([]Item, 0)
 			for _, k := range s.invent.loadout() {
 				if i == 0 {
 					startChan <- time.Now()

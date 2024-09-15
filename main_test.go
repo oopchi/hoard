@@ -11,7 +11,7 @@ func TestSuite(t *testing.T) {
 }
 
 type suiteTest struct {
-	invent inventory
+	invent Inventory
 
 	suite.Suite
 }

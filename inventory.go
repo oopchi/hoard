@@ -5,24 +5,25 @@ import (
 	"sync"
 )
 
-type inventory interface {
+type Inventory interface {
+	Put(itemImpl Item) Inventory
+	PutIfAbsent(itemImpl Item) Inventory
+
 	getName() string
 
 	// equip returns the itemImpl with the given name.
 	// Should only be used internally.
 	// Prefer using [EquipDefault] or [EquipWithOption] instead.
-	equip(name string) item
-	put(itemImpl item) inventory
-	putIfAbsent(itemImpl item) inventory
-	merge(inventoryImpl inventory) inventory
+	equip(name string) Item
+	merge(inventoryImpl Inventory) Inventory
 
-	loadout() func(func(string, item) bool)
+	loadout() func(func(string, Item) bool)
 }
 
-func newInventory(name string) inventory {
+func newInventory(name string) Inventory {
 	return &inventoryImpl{
 		sortedKeys: make([]string, 0),
-		itemMap:    make(map[string]item),
+		itemMap:    make(map[string]Item),
 		name:       name,
 		mu:         sync.RWMutex{},
 	}
@@ -30,7 +31,7 @@ func newInventory(name string) inventory {
 
 type inventoryImpl struct {
 	sortedKeys []string
-	itemMap    map[string]item
+	itemMap    map[string]Item
 	name       string
 	mu         sync.RWMutex
 }
@@ -39,7 +40,7 @@ func (b *inventoryImpl) getName() string {
 	return b.name
 }
 
-func (b *inventoryImpl) equip(name string) item {
+func (b *inventoryImpl) equip(name string) Item {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 
@@ -52,7 +53,7 @@ func (b *inventoryImpl) equip(name string) item {
 	return v
 }
 
-func (b *inventoryImpl) put(itemImpl item) inventory {
+func (b *inventoryImpl) Put(itemImpl Item) Inventory {
 	if itemImpl == nil {
 		return b
 	}
@@ -69,7 +70,7 @@ func (b *inventoryImpl) put(itemImpl item) inventory {
 	return b
 }
 
-func (b *inventoryImpl) putIfAbsent(itemImpl item) inventory {
+func (b *inventoryImpl) PutIfAbsent(itemImpl Item) Inventory {
 	if itemImpl == nil {
 		return b
 	}
@@ -85,7 +86,7 @@ func (b *inventoryImpl) putIfAbsent(itemImpl item) inventory {
 	return b
 }
 
-func (b *inventoryImpl) merge(inventoryImpl inventory) inventory {
+func (b *inventoryImpl) merge(inventoryImpl Inventory) Inventory {
 	if inventoryImpl == nil {
 		return b
 	}
@@ -107,8 +108,8 @@ func (b *inventoryImpl) merge(inventoryImpl inventory) inventory {
 	return b
 }
 
-func (b *inventoryImpl) loadout() func(func(string, item) bool) {
-	return func(yield func(string, item) bool) {
+func (b *inventoryImpl) loadout() func(func(string, Item) bool) {
+	return func(yield func(string, Item) bool) {
 		b.mu.RLock()
 		defer b.mu.RUnlock()
 

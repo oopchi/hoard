@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	// defaultInventoryName is the default inventory used if no custom name is provided.
+	// defaultInventoryName is the default Inventory used if no custom name is provided.
 	defaultInventoryName = "default"
 )
 
@@ -129,7 +129,7 @@ func (h EquipOptions) WithCustomItemName(customItemName string) EquipOptions {
 
 type Hoarder interface {
 	get(typeOfThing reflect.Type, inventoryName, itemName string) interface{}
-	loadout() func(func(string, inventory) bool)
+	loadout() func(func(string, Inventory) bool)
 	merge(hoarder Hoarder)
 }
 
@@ -139,7 +139,7 @@ var (
 )
 
 type hoarder struct {
-	inventoryMap map[string]inventory
+	inventoryMap map[string]Inventory
 
 	mu sync.RWMutex
 }
@@ -167,13 +167,13 @@ func Hoard(opt HoardOptions, things ...interface{}) Hoarder {
 	return h
 }
 
-func RememberAs(thing interface{}, name string) item {
+func RememberAs(thing interface{}, name string) Item {
 	typeOfThing := getTypeOfThing(thing)
 	thingName := getCustomThingName(name, typeOfThing)
 	return newItem(thing, thingName)
 }
 
-func UseInventory(name string) inventory {
+func UseInventory(name string) Inventory {
 	name = getCustomInventoryName(name)
 	inventoryImpl := newInventory(name)
 
@@ -251,8 +251,8 @@ func (h *hoarder) get(typeOfThing reflect.Type, inventoryName, itemName string) 
 	return nil
 }
 
-func (h *hoarder) loadout() func(func(string, inventory) bool) {
-	return func(yield func(string, inventory) bool) {
+func (h *hoarder) loadout() func(func(string, Inventory) bool) {
+	return func(yield func(string, Inventory) bool) {
 		h.mu.RLock()
 		defer h.mu.RUnlock()
 
@@ -278,7 +278,7 @@ func (h *hoarder) merge(hoarder Hoarder) {
 
 	for k, v := range hoarder.loadout() {
 		if h.inventoryMap == nil {
-			h.inventoryMap = make(map[string]inventory)
+			h.inventoryMap = make(map[string]Inventory)
 		}
 
 		if _, ok := h.inventoryMap[k]; !ok {
@@ -307,27 +307,27 @@ func initGlobalHoarder(h Hoarder) {
 }
 
 func factory(things ...interface{}) Hoarder {
-	inventoryMap := make(map[string]inventory)
+	inventoryMap := make(map[string]Inventory)
 	inventoryMap[defaultInventoryName] = newInventory(defaultInventoryName)
 	for _, thing := range things {
 		if thing == nil {
 			continue
 		}
 
-		if v, ok := thing.(inventory); ok {
+		if v, ok := thing.(Inventory); ok {
 			inventoryMap[v.getName()] = newInventory(v.getName())
 
-			// also put the inventoryImpl items into the default inventoryImpl if absent
+			// also Put the inventoryImpl items into the default inventoryImpl if absent
 			for _, itemImpl := range v.loadout() {
 				inventoryMap[defaultInventoryName].
-					putIfAbsent(
+					PutIfAbsent(
 						newItem(
 							itemImpl.use(),
 							getOriginalThingName(itemImpl.getName()),
 						),
 					)
 				inventoryMap[v.getName()].
-					put(
+					Put(
 						newItem(
 							itemImpl.use(),
 							getOriginalThingName(itemImpl.getName()),
@@ -339,13 +339,13 @@ func factory(things ...interface{}) Hoarder {
 				}
 
 				inventoryMap[defaultInventoryName].
-					putIfAbsent(
+					PutIfAbsent(
 						newItem(
 							itemImpl.use(),
 							getAliasThingName(itemImpl.getName()),
 						),
 					).
-					putIfAbsent(
+					PutIfAbsent(
 						newItem(
 							itemImpl.use(),
 							itemImpl.getName(),
@@ -353,13 +353,13 @@ func factory(things ...interface{}) Hoarder {
 					)
 
 				inventoryMap[v.getName()].
-					put(
+					Put(
 						newItem(
 							itemImpl.use(),
 							getAliasThingName(itemImpl.getName()),
 						),
 					).
-					put(
+					Put(
 						newItem(
 							itemImpl.use(),
 							itemImpl.getName(),
@@ -369,9 +369,9 @@ func factory(things ...interface{}) Hoarder {
 			continue
 		}
 
-		if v, ok := thing.(item); ok {
+		if v, ok := thing.(Item); ok {
 			inventoryMap[defaultInventoryName].
-				putIfAbsent(
+				PutIfAbsent(
 					newItem(
 						v.use(),
 						getOriginalThingName(v.getName()),
@@ -383,13 +383,13 @@ func factory(things ...interface{}) Hoarder {
 			}
 
 			inventoryMap[defaultInventoryName].
-				put(
+				Put(
 					newItem(
 						v.use(),
 						getAliasThingName(v.getName()),
 					),
 				).
-				put(
+				Put(
 					newItem(
 						v.use(),
 						v.getName(),
@@ -405,7 +405,7 @@ func factory(things ...interface{}) Hoarder {
 			continue
 		}
 
-		inventoryMap[defaultInventoryName].put(newItem(thing, thingName))
+		inventoryMap[defaultInventoryName].Put(newItem(thing, thingName))
 	}
 
 	return &hoarder{
