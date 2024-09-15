@@ -6,8 +6,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/oopchi/hoard/internal/core/constant"
-	"github.com/oopchi/hoard/internal/domain/entity"
 	"github.com/stretchr/testify/require"
 )
 
@@ -130,8 +128,8 @@ func (s *suiteTest) Test_factory() {
 			name:  "should be able to create a hoarder without any items",
 			given: nil,
 			want: &hoarder{
-				inventoryMap: map[string]entity.Inventory{
-					constant.DEFAULT_INVENTORY_NAME: entity.NewInventory(constant.DEFAULT_INVENTORY_NAME),
+				inventoryMap: map[string]inventory{
+					defaultInventoryName: newInventory(defaultInventoryName),
 				},
 				mu: sync.RWMutex{},
 			},
@@ -139,13 +137,13 @@ func (s *suiteTest) Test_factory() {
 		{
 			name: "should be able to create a hoarder with a single named item",
 			given: []interface{}{
-				entity.NewItem("test thing", "test"),
+				newItem("test thing", "test"),
 			},
 			want: &hoarder{
-				inventoryMap: func() map[string]entity.Inventory {
-					inventoryMap := make(map[string]entity.Inventory)
-					inventoryMap[constant.DEFAULT_INVENTORY_NAME] = entity.NewInventory(constant.DEFAULT_INVENTORY_NAME)
-					inventoryMap[constant.DEFAULT_INVENTORY_NAME].Put(entity.NewItem("test thing", "test"))
+				inventoryMap: func() map[string]inventory {
+					inventoryMap := make(map[string]inventory)
+					inventoryMap[defaultInventoryName] = newInventory(defaultInventoryName)
+					inventoryMap[defaultInventoryName].put(newItem("test thing", "test"))
 
 					return inventoryMap
 				}(),
@@ -155,13 +153,13 @@ func (s *suiteTest) Test_factory() {
 		{
 			name: "should be able to create a hoarder with a single named inventory",
 			given: []interface{}{
-				entity.NewInventory("test"),
+				newInventory("test"),
 			},
 			want: &hoarder{
-				inventoryMap: func() map[string]entity.Inventory {
-					inventoryMap := make(map[string]entity.Inventory)
-					inventoryMap["test"] = entity.NewInventory("test")
-					inventoryMap[constant.DEFAULT_INVENTORY_NAME] = entity.NewInventory(constant.DEFAULT_INVENTORY_NAME)
+				inventoryMap: func() map[string]inventory {
+					inventoryMap := make(map[string]inventory)
+					inventoryMap["test"] = newInventory("test")
+					inventoryMap[defaultInventoryName] = newInventory(defaultInventoryName)
 
 					return inventoryMap
 				}(),
@@ -171,22 +169,22 @@ func (s *suiteTest) Test_factory() {
 		{
 			name: "should be able to create a hoarder with a single named inventory with a single pointer item and a single named item",
 			given: []interface{}{
-				func() entity.Inventory {
-					i := entity.NewInventory("test")
-					i.Put(entity.NewItem(&TestFooImpl{}, "test234"))
+				func() inventory {
+					i := newInventory("test")
+					i.put(newItem(&TestFooImpl{}, "test234"))
 
 					return i
 				}(),
-				entity.NewItem("test thing", "test"),
+				newItem("test thing", "test"),
 			},
 			want: &hoarder{
-				inventoryMap: func() map[string]entity.Inventory {
-					inventoryMap := make(map[string]entity.Inventory)
-					inventoryMap["test"] = entity.NewInventory("test")
-					inventoryMap["test"].Put(entity.NewItem(&TestFooImpl{}, "test234"))
-					inventoryMap[constant.DEFAULT_INVENTORY_NAME] = entity.NewInventory(constant.DEFAULT_INVENTORY_NAME).
-						Put(entity.NewItem("test thing", "test")).
-						Put(entity.NewItem(&TestFooImpl{}, "test234"))
+				inventoryMap: func() map[string]inventory {
+					inventoryMap := make(map[string]inventory)
+					inventoryMap["test"] = newInventory("test")
+					inventoryMap["test"].put(newItem(&TestFooImpl{}, "test234"))
+					inventoryMap[defaultInventoryName] = newInventory(defaultInventoryName).
+						put(newItem("test thing", "test")).
+						put(newItem(&TestFooImpl{}, "test234"))
 
 					return inventoryMap
 				}(),
@@ -196,13 +194,13 @@ func (s *suiteTest) Test_factory() {
 		{
 			name: "should be able to create a hoarder with a single named inventory with a single pointer item and a single named item and a single interface item and a nil item and a struct item and a pointer item and a hoarder itself",
 			given: []interface{}{
-				func() entity.Inventory {
-					i := entity.NewInventory("test")
-					i.Put(entity.NewItem(&TestFooImpl{}, "test234"))
+				func() inventory {
+					i := newInventory("test")
+					i.put(newItem(&TestFooImpl{}, "test234"))
 
 					return i
 				}(),
-				entity.NewItem("test thing", "test"),
+				newItem("test thing", "test"),
 				func() TestFooer {
 					return TestFooImpl{}
 				},
@@ -211,11 +209,11 @@ func (s *suiteTest) Test_factory() {
 				TestFooImpl{},
 				&TestFooImpl{},
 				&hoarder{
-					inventoryMap: map[string]entity.Inventory{
-						"test": entity.NewInventory("test"),
-						"test2": func() entity.Inventory {
-							i := entity.NewInventory("test2")
-							i.Put(entity.NewItem("test thing234", "test234"))
+					inventoryMap: map[string]inventory{
+						"test": newInventory("test"),
+						"test2": func() inventory {
+							i := newInventory("test2")
+							i.put(newItem("test thing234", "test234"))
 
 							return i
 						}(),
@@ -224,27 +222,27 @@ func (s *suiteTest) Test_factory() {
 				},
 			},
 			want: &hoarder{
-				inventoryMap: func() map[string]entity.Inventory {
-					inventoryMap := make(map[string]entity.Inventory)
-					inventoryMap["test"] = entity.NewInventory("test")
-					inventoryMap["test"].Put(entity.NewItem(&TestFooImpl{}, "test234"))
-					inventoryMap[constant.DEFAULT_INVENTORY_NAME] = entity.NewInventory(constant.DEFAULT_INVENTORY_NAME)
-					inventoryMap[constant.DEFAULT_INVENTORY_NAME].Put(entity.NewItem("test thing", "test"))
-					inventoryMap[constant.DEFAULT_INVENTORY_NAME].Put(entity.NewItem(TestFooImpl{}, "github.com/oopchi/hoardTestFooImpl"))
-					inventoryMap[constant.DEFAULT_INVENTORY_NAME].Put(entity.NewItem(&TestFooImpl{}, "*github.com/oopchi/hoardTestFooImpl"))
-					inventoryMap[constant.DEFAULT_INVENTORY_NAME].Put(entity.NewItem("hehe", "string"))
-					inventoryMap[constant.DEFAULT_INVENTORY_NAME].Put(entity.NewItem(&hoarder{
-						inventoryMap: map[string]entity.Inventory{
-							"test": entity.NewInventory("test"),
-							"test2": func() entity.Inventory {
-								i := entity.NewInventory("test2")
-								i.Put(entity.NewItem("test thing234", "test234"))
+				inventoryMap: func() map[string]inventory {
+					inventoryMap := make(map[string]inventory)
+					inventoryMap["test"] = newInventory("test")
+					inventoryMap["test"].put(newItem(&TestFooImpl{}, "test234"))
+					inventoryMap[defaultInventoryName] = newInventory(defaultInventoryName)
+					inventoryMap[defaultInventoryName].put(newItem("test thing", "test"))
+					inventoryMap[defaultInventoryName].put(newItem(TestFooImpl{}, "github.com/oopchi/hoardTestFooImpl"))
+					inventoryMap[defaultInventoryName].put(newItem(&TestFooImpl{}, "*github.com/oopchi/hoardTestFooImpl"))
+					inventoryMap[defaultInventoryName].put(newItem("hehe", "string"))
+					inventoryMap[defaultInventoryName].put(newItem(&hoarder{
+						inventoryMap: map[string]inventory{
+							"test": newInventory("test"),
+							"test2": func() inventory {
+								i := newInventory("test2")
+								i.put(newItem("test thing234", "test234"))
 
 								return i
 							}(),
 						},
 						mu: sync.RWMutex{},
-					}, "*github.com/oopchi/hoardhoarder")).Put(entity.NewItem(&TestFooImpl{}, "test234"))
+					}, "*github.com/oopchi/hoardhoarder")).put(newItem(&TestFooImpl{}, "test234"))
 
 					return inventoryMap
 				}(),
@@ -259,39 +257,39 @@ func (s *suiteTest) Test_factory() {
 
 			require.NotNil(s.T(), got)
 
-			gotInventories := []entity.Inventory{}
+			gotInventories := []inventory{}
 			gotInventoriesNames := []string{}
 			for _, v := range got.loadout() {
 				gotInventories = append(gotInventories, v)
-				gotInventoriesNames = append(gotInventoriesNames, v.GetName())
+				gotInventoriesNames = append(gotInventoriesNames, v.getName())
 			}
 
-			wantInventories := []entity.Inventory{}
+			wantInventories := []inventory{}
 			wantInventoriesNames := []string{}
 			for _, v := range tt.want.loadout() {
 				wantInventories = append(wantInventories, v)
-				wantInventoriesNames = append(wantInventoriesNames, v.GetName())
+				wantInventoriesNames = append(wantInventoriesNames, v.getName())
 			}
 
 			require.ElementsMatch(s.T(), wantInventoriesNames, gotInventoriesNames)
 
-			gotItems := map[string][]entity.Item{}
+			gotItems := map[string][]item{}
 			for _, v := range gotInventories {
-				for _, item := range v.Loadout() {
-					if gotItems[v.GetName()] == nil {
-						gotItems[v.GetName()] = []entity.Item{}
+				for _, it := range v.loadout() {
+					if gotItems[v.getName()] == nil {
+						gotItems[v.getName()] = []item{}
 					}
-					gotItems[v.GetName()] = append(gotItems[v.GetName()], item)
+					gotItems[v.getName()] = append(gotItems[v.getName()], it)
 				}
 			}
 
-			wantItems := map[string][]entity.Item{}
+			wantItems := map[string][]item{}
 			for _, v := range wantInventories {
-				for _, item := range v.Loadout() {
-					if wantItems[v.GetName()] == nil {
-						wantItems[v.GetName()] = []entity.Item{}
+				for _, it := range v.loadout() {
+					if wantItems[v.getName()] == nil {
+						wantItems[v.getName()] = []item{}
 					}
-					wantItems[v.GetName()] = append(wantItems[v.GetName()], item)
+					wantItems[v.getName()] = append(wantItems[v.getName()], it)
 				}
 			}
 
@@ -312,7 +310,7 @@ func (s *suiteTest) Test_initGlobalHoarder() {
 			name: "should be able to initialize a global hoarder",
 			initHoarders: []Hoarder{
 				&hoarder{
-					inventoryMap: make(map[string]entity.Inventory),
+					inventoryMap: make(map[string]inventory),
 					mu:           sync.RWMutex{},
 				},
 			},
@@ -322,13 +320,13 @@ func (s *suiteTest) Test_initGlobalHoarder() {
 			name: "multiple initializations should not change the global hoarder",
 			initHoarders: []Hoarder{
 				&hoarder{
-					inventoryMap: map[string]entity.Inventory{
-						constant.DEFAULT_INVENTORY_NAME: entity.NewInventory(constant.DEFAULT_INVENTORY_NAME),
+					inventoryMap: map[string]inventory{
+						defaultInventoryName: newInventory(defaultInventoryName),
 					},
 					mu: sync.RWMutex{},
 				},
 				&hoarder{
-					inventoryMap: make(map[string]entity.Inventory),
+					inventoryMap: make(map[string]inventory),
 					mu:           sync.RWMutex{},
 				},
 			},
@@ -388,12 +386,12 @@ func (s *suiteTest) Test_merge() {
 					mu: sync.RWMutex{},
 				},
 				&hoarder{
-					inventoryMap: map[string]entity.Inventory{
-						"test": entity.NewInventory("test"),
-						"test2": func() entity.Inventory {
-							i := entity.NewInventory("test2")
-							i.Put(entity.NewItem("test thing11", "test11"))
-							i.Put(entity.NewItem("test thing", "test"))
+					inventoryMap: map[string]inventory{
+						"test": newInventory("test"),
+						"test2": func() inventory {
+							i := newInventory("test2")
+							i.put(newItem("test thing11", "test11"))
+							i.put(newItem("test thing", "test"))
 
 							return i
 						}(),
@@ -401,11 +399,11 @@ func (s *suiteTest) Test_merge() {
 					mu: sync.RWMutex{},
 				},
 				&hoarder{
-					inventoryMap: map[string]entity.Inventory{
-						"test": entity.NewInventory("test"),
-						"test2": func() entity.Inventory {
-							i := entity.NewInventory("test2")
-							i.Put(entity.NewItem("test thing234", "test234"))
+					inventoryMap: map[string]inventory{
+						"test": newInventory("test"),
+						"test2": func() inventory {
+							i := newInventory("test2")
+							i.put(newItem("test thing234", "test234"))
 
 							return i
 						}(),
@@ -413,11 +411,11 @@ func (s *suiteTest) Test_merge() {
 					mu: sync.RWMutex{},
 				},
 				&hoarder{
-					inventoryMap: map[string]entity.Inventory{
-						"test": entity.NewInventory("test"),
-						"test2": func() entity.Inventory {
-							i := entity.NewInventory("test2")
-							i.Put(entity.NewItem("test thing234", "test234"))
+					inventoryMap: map[string]inventory{
+						"test": newInventory("test"),
+						"test2": func() inventory {
+							i := newInventory("test2")
+							i.put(newItem("test thing234", "test234"))
 
 							return i
 						}(),
@@ -425,11 +423,11 @@ func (s *suiteTest) Test_merge() {
 					mu: sync.RWMutex{},
 				},
 				&hoarder{
-					inventoryMap: map[string]entity.Inventory{
-						"test53": entity.NewInventory("test53"),
-						"test265": func() entity.Inventory {
-							i := entity.NewInventory("test265")
-							i.Put(entity.NewItem("test thing23124", "test23124"))
+					inventoryMap: map[string]inventory{
+						"test53": newInventory("test53"),
+						"test265": func() inventory {
+							i := newInventory("test265")
+							i.put(newItem("test thing23124", "test23124"))
 
 							return i
 						}(),
@@ -438,20 +436,20 @@ func (s *suiteTest) Test_merge() {
 				},
 			},
 			want: &hoarder{
-				inventoryMap: map[string]entity.Inventory{
-					"test": entity.NewInventory("test"),
-					"test2": func() entity.Inventory {
-						i := entity.NewInventory("test2")
-						i.Put(entity.NewItem("test thing", "test"))
-						i.Put(entity.NewItem("test thing11", "test11"))
-						i.Put(entity.NewItem("test thing234", "test234"))
+				inventoryMap: map[string]inventory{
+					"test": newInventory("test"),
+					"test2": func() inventory {
+						i := newInventory("test2")
+						i.put(newItem("test thing", "test"))
+						i.put(newItem("test thing11", "test11"))
+						i.put(newItem("test thing234", "test234"))
 
 						return i
 					}(),
-					"test53": entity.NewInventory("test53"),
-					"test265": func() entity.Inventory {
-						i := entity.NewInventory("test265")
-						i.Put(entity.NewItem("test thing23124", "test23124"))
+					"test53": newInventory("test53"),
+					"test265": func() inventory {
+						i := newInventory("test265")
+						i.put(newItem("test thing23124", "test23124"))
 
 						return i
 					}(),
@@ -463,11 +461,11 @@ func (s *suiteTest) Test_merge() {
 			name: "should be able to handle merge with nil hoarder by returning the same hoarder",
 			given: []Hoarder{
 				&hoarder{
-					inventoryMap: map[string]entity.Inventory{
-						"test": entity.NewInventory("test"),
-						"test2": func() entity.Inventory {
-							i := entity.NewInventory("test2")
-							i.Put(entity.NewItem("test thing234", "test234"))
+					inventoryMap: map[string]inventory{
+						"test": newInventory("test"),
+						"test2": func() inventory {
+							i := newInventory("test2")
+							i.put(newItem("test thing234", "test234"))
 
 							return i
 						}(),
@@ -477,11 +475,11 @@ func (s *suiteTest) Test_merge() {
 				nil,
 			},
 			want: &hoarder{
-				inventoryMap: map[string]entity.Inventory{
-					"test": entity.NewInventory("test"),
-					"test2": func() entity.Inventory {
-						i := entity.NewInventory("test2")
-						i.Put(entity.NewItem("test thing234", "test234"))
+				inventoryMap: map[string]inventory{
+					"test": newInventory("test"),
+					"test2": func() inventory {
+						i := newInventory("test2")
+						i.put(newItem("test thing234", "test234"))
 
 						return i
 					}(),
@@ -508,39 +506,39 @@ func (s *suiteTest) Test_merge() {
 				h.merge(v)
 			}
 
-			gotInventories := []entity.Inventory{}
+			gotInventories := []inventory{}
 			gotInventoriesNames := []string{}
 			for _, v := range h.loadout() {
 				gotInventories = append(gotInventories, v)
-				gotInventoriesNames = append(gotInventoriesNames, v.GetName())
+				gotInventoriesNames = append(gotInventoriesNames, v.getName())
 			}
 
-			wantInventories := []entity.Inventory{}
+			wantInventories := []inventory{}
 			wantInventoriesNames := []string{}
 			for _, v := range tt.want.loadout() {
 				wantInventories = append(wantInventories, v)
-				wantInventoriesNames = append(wantInventoriesNames, v.GetName())
+				wantInventoriesNames = append(wantInventoriesNames, v.getName())
 			}
 
 			require.ElementsMatch(s.T(), wantInventoriesNames, gotInventoriesNames)
 
-			gotItems := map[string][]entity.Item{}
+			gotItems := map[string][]item{}
 			for _, v := range gotInventories {
-				for _, item := range v.Loadout() {
-					if gotItems[v.GetName()] == nil {
-						gotItems[v.GetName()] = []entity.Item{}
+				for _, it := range v.loadout() {
+					if gotItems[v.getName()] == nil {
+						gotItems[v.getName()] = []item{}
 					}
-					gotItems[v.GetName()] = append(gotItems[v.GetName()], item)
+					gotItems[v.getName()] = append(gotItems[v.getName()], it)
 				}
 			}
 
-			wantItems := map[string][]entity.Item{}
+			wantItems := map[string][]item{}
 			for _, v := range wantInventories {
-				for _, item := range v.Loadout() {
-					if wantItems[v.GetName()] == nil {
-						wantItems[v.GetName()] = []entity.Item{}
+				for _, it := range v.loadout() {
+					if wantItems[v.getName()] == nil {
+						wantItems[v.getName()] = []item{}
 					}
-					wantItems[v.GetName()] = append(wantItems[v.GetName()], item)
+					wantItems[v.getName()] = append(wantItems[v.getName()], it)
 				}
 			}
 
@@ -569,7 +567,7 @@ func (s *suiteTest) Test_get() {
 				return h
 			}(),
 			givenType:          reflect.TypeOf(TestFooImpl{}),
-			givenInventoryName: constant.DEFAULT_INVENTORY_NAME,
+			givenInventoryName: defaultInventoryName,
 			givenItemName:      "",
 			want:               TestFooImpl{},
 		},
@@ -581,7 +579,7 @@ func (s *suiteTest) Test_get() {
 				return h
 			}(),
 			givenType:          reflect.TypeOf(TestFooImpl{}),
-			givenInventoryName: constant.DEFAULT_INVENTORY_NAME,
+			givenInventoryName: defaultInventoryName,
 			givenItemName:      "test",
 			want:               TestFooImpl{},
 		},
@@ -593,7 +591,7 @@ func (s *suiteTest) Test_get() {
 				return h
 			}(),
 			givenType:          reflect.TypeOf("TestFooImpl{}"),
-			givenInventoryName: constant.DEFAULT_INVENTORY_NAME,
+			givenInventoryName: defaultInventoryName,
 			givenItemName:      "",
 			want:               "test3",
 		},
@@ -605,7 +603,7 @@ func (s *suiteTest) Test_get() {
 				return h
 			}(),
 			givenType:          reflect.TypeFor[TestFooer](),
-			givenInventoryName: constant.DEFAULT_INVENTORY_NAME,
+			givenInventoryName: defaultInventoryName,
 			givenItemName:      "",
 			want:               TestFooImpl{},
 		},
@@ -613,13 +611,13 @@ func (s *suiteTest) Test_get() {
 			name: "should be able to get item from named inventory within the default inventory if the item is not yet hoarded in the default inventory",
 			givenHoarder: func() Hoarder {
 				invent := UseInventory("test")
-				invent.Put(RememberAs(TestFooImpl{}, "test"))
+				invent.put(RememberAs(TestFooImpl{}, "test"))
 				h := factory(&hoarder{}, invent)
 
 				return h
 			}(),
 			givenType:          reflect.TypeOf(TestFooImpl{}),
-			givenInventoryName: constant.DEFAULT_INVENTORY_NAME,
+			givenInventoryName: defaultInventoryName,
 			givenItemName:      "test",
 			want:               TestFooImpl{},
 		},
@@ -631,7 +629,7 @@ func (s *suiteTest) Test_get() {
 				return h
 			}(),
 			givenType:          reflect.TypeOf(TestFooImpl{}),
-			givenInventoryName: constant.DEFAULT_INVENTORY_NAME,
+			givenInventoryName: defaultInventoryName,
 			givenItemName:      "test4",
 			want:               nil,
 		},
@@ -639,13 +637,13 @@ func (s *suiteTest) Test_get() {
 			name: "should return nil if the requested item is a function",
 			givenHoarder: func() Hoarder {
 				invent := UseInventory("test")
-				invent.Put(RememberAs(TestFooImpl{}, "test"))
+				invent.put(RememberAs(TestFooImpl{}, "test"))
 				h := factory(&hoarder{}, invent)
 
 				return h
 			}(),
 			givenType:          reflect.TypeOf(func() {}),
-			givenInventoryName: constant.DEFAULT_INVENTORY_NAME,
+			givenInventoryName: defaultInventoryName,
 			givenItemName:      "",
 			want:               nil,
 		},
@@ -667,6 +665,17 @@ func (s *suiteTest) Test_get() {
 }
 
 func (s *suiteTest) TestEquipWithOption() {
+
+	customHoarder := Hoard(
+		HoardOptions{}.ShouldReplaceGlobal(false),
+		UseInventory("test").
+			put(RememberAs(TestFooImpl{}, "test")).
+			put(RememberAs(TestFooImpl{}, "test2")).
+			put(RememberAs(TestFooImpl{}, "test3")).
+			put(RememberAs("test353", "")).
+			put(RememberAs(&TestFooImpl{}, "")),
+	)
+
 	tests := []struct {
 		name                string
 		givenOption         EquipOptions
@@ -688,13 +697,13 @@ func (s *suiteTest) TestEquipWithOption() {
 			givenOption: EquipOptions{}.WithCustomInventoryName("test"),
 			givenCustomHoarders: []Hoarder{
 				Hoard(
-					HoardOptions{}.ShouldReplaceGlobal(false),
+					HoardOptions{}.ShouldReplaceGlobal(false).WithCustomHoarder(customHoarder),
 					UseInventory("test").
-						Put(RememberAs(TestFooImpl{}, "test")).
-						Put(RememberAs(TestFooImpl{}, "test2")).
-						Put(RememberAs(TestFooImpl{}, "test3")).
-						Put(RememberAs("test353", "")).
-						Put(RememberAs(&TestFooImpl{}, "")),
+						put(RememberAs(TestFooImpl{}, "test")).
+						put(RememberAs(TestFooImpl{}, "test2")).
+						put(RememberAs(TestFooImpl{}, "test3")).
+						put(RememberAs("test353", "")).
+						put(RememberAs(&TestFooImpl{}, "")),
 				),
 			},
 			wantString:  "test353",
@@ -708,11 +717,11 @@ func (s *suiteTest) TestEquipWithOption() {
 				Hoard(
 					HoardOptions{}.ShouldReplaceGlobal(false),
 					UseInventory("test").
-						Put(RememberAs(TestFooImpl{}, "test")).
-						Put(RememberAs(TestFooImpl{}, "test2")).
-						Put(RememberAs(TestFooImpl{}, "test3")).
-						Put(RememberAs("test353", "test")).
-						Put(RememberAs(&TestFooImpl{}, "test")),
+						put(RememberAs(TestFooImpl{}, "test")).
+						put(RememberAs(TestFooImpl{}, "test2")).
+						put(RememberAs(TestFooImpl{}, "test3")).
+						put(RememberAs("test353", "test")).
+						put(RememberAs(&TestFooImpl{}, "test")),
 				),
 			},
 			wantString:  "test353",
@@ -757,11 +766,11 @@ func (s *suiteTest) TestEquipDefault() {
 				Hoard(
 					HoardOptions{}.ShouldReplaceGlobal(false),
 					UseInventory("test").
-						Put(RememberAs(TestFooImpl{}, "test")).
-						Put(RememberAs(TestFooImpl{}, "test2")).
-						Put(RememberAs(TestFooImpl{}, "test3")).
-						Put(RememberAs("test353", "")).
-						Put(RememberAs(&TestFooImpl{}, "")),
+						put(RememberAs(TestFooImpl{}, "test")).
+						put(RememberAs(TestFooImpl{}, "test2")).
+						put(RememberAs(TestFooImpl{}, "test3")).
+						put(RememberAs("test353", "")).
+						put(RememberAs(&TestFooImpl{}, "")),
 				),
 			},
 			wantString:  "test353",
@@ -905,8 +914,8 @@ func simulateHugeHoard() {
 	Hoard(
 		nil,
 		UseInventory("test").
-			Put(RememberAs("test353", "test")).
-			Put(RememberAs(TestFooImpl{}, "test")),
+			put(RememberAs("test353", "test")).
+			put(RememberAs(TestFooImpl{}, "test")),
 	)
 
 	for i := 1000; i < 2000; i++ {

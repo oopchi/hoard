@@ -11,6 +11,8 @@ func TestSuite(t *testing.T) {
 }
 
 type suiteTest struct {
+	invent inventory
+
 	suite.Suite
 }
 
@@ -21,7 +23,9 @@ var _ suite.SetupSubTest = (*suiteTest)(nil)
 var _ suite.SetupTestSuite = (*suiteTest)(nil)
 
 func (s *suiteTest) SetupTest() {
+	s.invent = newInventory("test")
 }
 
 func (s *suiteTest) SetupSubTest() {
+	s.invent = newInventory("test")
 }
